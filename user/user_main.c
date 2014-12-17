@@ -18,6 +18,8 @@
 #include "httpdespfs.h"
 #include "cgi.h"
 #include "cgiwifi.h"
+#include "cgiwhitelist.h"
+#include "auth.h"
 #include "stdout.h"
 
 HttpdBuiltInUrl builtInUrls[]={
@@ -26,6 +28,13 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/led.tpl", cgiEspFsTemplate, tplLed},
 	{"/index.tpl", cgiEspFsTemplate, tplCounter},
 	{"/led.cgi", cgiLed, NULL},
+
+	// Routines to parse the whitelist operations
+	{"/whitelist", cgiRedirect, "/whitelist.tpl"},
+	{"/whitelist/", cgiRedirect, "/whitelist.tpl"},
+	{"/whitelist/del.cgi", cgiWhitelistDel, NULL},
+	{"/whitelist/add.cgi", cgiWhitelistAdd, NULL},
+	{"/whitelist.tpl", cgiEspFsTemplate, tplWhitelist},
 
 	//Routines to make the /wifi URL and everything beneath it work.
 	{"/wifi", cgiRedirect, "/wifi/wifi.tpl"},
@@ -44,6 +53,8 @@ HttpdBuiltInUrl builtInUrls[]={
 void user_init(void) {
 	stdoutInit();
 	ioInit();
+	authInit();
 	httpdInit(builtInUrls, 80);
 	os_printf("\nReady\n");
 }
+

@@ -1,5 +1,5 @@
 <html>
-<head><title>Esp8266 web server</title>
+<head><title>ESPLight Server - Home</title>
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>

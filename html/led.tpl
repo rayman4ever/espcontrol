@@ -1,4 +1,6 @@
-<html><head><title>Test</title>
+<html>
+<head>
+<title>ESPLight Server - Led Control</title>
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>

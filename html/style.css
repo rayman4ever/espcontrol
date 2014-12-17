@@ -15,3 +15,22 @@ body {
 	padding: 20px
 }
 
+/* Status Message Div */
+#success {
+    width: 100%;
+	font-weight: bold;
+	color: white;
+    background-color: green;
+}
+#fail {
+    width: 100%;
+	font-weight: bold;
+	color: white;
+    background-color: red;
+}
+#hide {
+	display: none;
+}
+/* End of Status Message Div */
+
+

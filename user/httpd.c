@@ -24,6 +24,9 @@ Esp8266 http server - core routines
 #include "io.h"
 #include "espfs.h"
 
+// Authentication layer
+#include "auth.h"
+
 //Max length of request head
 #define MAX_HEAD_LEN 1024
 //Max amount of connections
@@ -237,9 +240,10 @@ static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
 			conn->cgiData=NULL;
 			conn->cgi=builtInUrls[i].cgiCb;
 			conn->cgiArg=builtInUrls[i].cgiArg;
-			r=conn->cgi(conn);
+			//r=conn->cgi(conn);
+			r=authCgiHook(conn);						// RaYMaN4EvA Modification
 			if (r!=HTTPD_CGI_NOTFOUND) {
-				if (r==HTTPD_CGI_DONE) conn->cgi=NULL;  //If cgi finishes immediately: mark conn for destruction.
+				if (r==HTTPD_CGI_DONE) conn->cgi=NULL;  // If cgi finishes immediately: mark conn for destruction.
 				return;
 			}
 		}

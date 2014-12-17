@@ -20,8 +20,8 @@ flash as a binary. Also handles the hit counter on the main page.
 #include "httpd.h"
 #include "cgi.h"
 #include "io.h"
+#include "auth.h"
 #include "espmissingincludes.h"
-#include <ip_addr.h>
 
 //cause I can't be bothered to write an ioGetLed()
 static char currLedState=0;
@@ -46,8 +46,6 @@ int ICACHE_FLASH_ATTR cgiLed(HttpdConnData *connData) {
 	return HTTPD_CGI_DONE;
 }
 
-
-
 //Template code for the led page.
 void ICACHE_FLASH_ATTR tplLed(HttpdConnData *connData, char *token, void **arg) {
 	char buff[128];
@@ -64,8 +62,8 @@ void ICACHE_FLASH_ATTR tplLed(HttpdConnData *connData, char *token, void **arg) 
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
 }
 
-static long hitCounter=0;
 
+static long hitCounter=0;
 //Template code for the counter on the index page.
 void ICACHE_FLASH_ATTR tplCounter(HttpdConnData *connData, char *token, void **arg) {
 	char buff[128];

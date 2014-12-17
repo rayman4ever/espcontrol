@@ -12,20 +12,21 @@ BUILD_BASE	= build
 FW_BASE		= firmware
 
 # Base directory for the compiler
-XTENSA_TOOLS_ROOT ?= /opt/Espressif/crosstool-NG/builds/xtensa-lx106-elf/bin
+XTENSA_TOOLS_ROOT ?= /home/rayman4eva/esp8266/crosstool-NG/builds/xtensa-lx106-elf/bin
 
 #Extra Tensilica includes from the ESS VM
-SDK_EXTRA_INCLUDES ?= /opt/Espressif/include
-SDK_EXTRA_LIBS ?= /opt/Espressif/arch/lib
+SDK_EXTRA_INCLUDES ?= /home/rayman4eva/esp8266/ESP8266_SDK/include
+SDK_EXTRA_LIBS ?= /home/rayman4eva/esp8266/ESP8266_SDK/lib
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= /opt/Espressif/ESP8266_SDK
+SDK_BASE	?= /home/rayman4eva/esp8266/ESP8266_SDK
 
 #Esptool.py path and port
-ESPTOOL		?= esptool
-ESPPORT		?= /dev/ttyUSB0
+ESPTOOL_PY		?= /home/rayman4eva/esp8266/esptool-py/esptool.py
+ESPTOOL			?= esptool
+ESPPORT			?= /dev/ttyUSB1
 #ESPDELAY indicates seconds to wait between flashing the two binary images
-ESPDELAY	?= 3
+ESPDELAY	?= 10
 ESPBAUD		?= 115200
 
 # name for the target project
@@ -33,11 +34,11 @@ TARGET		= httpd
 
 # which modules (subdirectories) of the project to include in compiling
 #MODULES		= driver user lwip/api lwip/app lwip/core lwip/core/ipv4 lwip/netif
-MODULES		= driver user
-EXTRA_INCDIR	= include \
-		. \
-		lib/heatshrink/ \
-		$(SDK_EXTRA_INCLUDES)
+MODULES			= driver user
+EXTRA_INCDIR	=	include \
+					. \
+					lib/heatshrink/ \
+					$(SDK_EXTRA_INCLUDES)
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 wpa main lwip
@@ -115,7 +116,7 @@ endef
 
 .PHONY: all checkdirs clean
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) html
 
 $(FW_FILE_1): $(TARGET_OUT) firmware
 	$(vecho) "FW $@"
@@ -142,10 +143,13 @@ firmware:
 	$(Q) mkdir -p $@
 
 flash: $(FW_FILE_1) $(FW_FILE_2)
-	$(Q) $(ESPTOOL) -cp $(ESPPORT) -cb $(ESPBAUD) -ca 0x00000 -cf firmware/0x00000.bin -v
-	$(Q) [ $(ESPDELAY) -ne 0 ] && echo "Please put the ESP in bootloader mode..."
-	$(Q) sleep $(ESPDELAY)
-	$(Q) $(ESPTOOL) -cp $(ESPPORT) -cb $(ESPBAUD) -ca 0x40000 -cf firmware/0x40000.bin -v
+	$(Q) $(ESPTOOL_PY) -p $(ESPPORT) write_flash 0x40000 firmware/0x40000.bin 0x00000 firmware/0x00000.bin
+
+flashhtml: html
+	$(Q) $(ESPTOOL_PY) -p $(ESPPORT) write_flash 0x12000 webpages.espfs
+
+flashall: $(FW_FILE_1) $(FW_FILE_2) html
+	$(Q) $(ESPTOOL_PY) -p $(ESPPORT) write_flash 0x40000 firmware/0x40000.bin 0x00000 firmware/0x00000.bin 0x12000 webpages.espfs
 
 webpages.espfs: html/ html/wifi/ mkespfsimage/mkespfsimage
 	cd html; find | ../mkespfsimage/mkespfsimage > ../webpages.espfs; cd ..
@@ -153,18 +157,18 @@ webpages.espfs: html/ html/wifi/ mkespfsimage/mkespfsimage
 mkespfsimage/mkespfsimage: mkespfsimage/
 	make -C mkespfsimage
 
-htmlflash: webpages.espfs
-	if [ $$(stat -c '%s' webpages.espfs) -gt $$(( 0x2E000 )) ]; then echo "webpages.espfs too big!"; false; fi
-	$(ESPTOOL) -cp $(ESPPORT) -cb $(ESPBAUD) -ca 0x12000 -cf webpages.espfs -v
+html: webpages.espfs
+	$(Q) if [ $$(stat -c '%s' webpages.espfs) -gt $$(( 0x2E000 )) ]; then echo "webpages.espfs too big!"; false; fi
 
 clean:
 	$(Q) rm -f $(APP_AR)
 	$(Q) rm -f $(TARGET_OUT)
 	$(Q) find $(BUILD_BASE) -type f | xargs rm -f
 
-
 	$(Q) rm -f $(FW_FILE_1)
 	$(Q) rm -f $(FW_FILE_2)
 	$(Q) rm -rf $(FW_BASE)
+
+	$(Q) rm -rf webpages.espfs
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
