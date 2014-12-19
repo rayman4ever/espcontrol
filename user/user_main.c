@@ -34,6 +34,7 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/whitelist/", cgiRedirect, "/whitelist.tpl"},
 	{"/whitelist/del.cgi", cgiWhitelistDel, NULL},
 	{"/whitelist/add.cgi", cgiWhitelistAdd, NULL},
+	{"/whitelist/update.cgi", cgiWhitelistUpdate, NULL},
 	{"/whitelist.tpl", cgiEspFsTemplate, tplWhitelist},
 
 	//Routines to make the /wifi URL and everything beneath it work.

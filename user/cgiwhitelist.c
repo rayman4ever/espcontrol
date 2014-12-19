@@ -14,8 +14,11 @@
 #include "espmissingincludes.h"
 #include "auth.h"
 #include "cgiwhitelist.h"
+#include "config.h"
 #include <ip_addr.h>
 #include <netif/etharp.h>
+
+#define	MSG_MAX_NUM		6
 
 #define MAC_TO_STR(buffer, mac)																\
 		do {																				\
@@ -30,7 +33,8 @@ enum
 	MSG_NOT_ALLOWED,
 	MSG_INVALID_MAC,
 	MSG_MAC_EXISTS,
-	MSG_LIST_FULL
+	MSG_LIST_FULL,
+	MSG_UPDATED
 };
 
 enum
@@ -40,13 +44,14 @@ enum
 	STYLE_FAIL
 };
 
-const char*	msgStyleStrList[]	=	{"hide", "success", "fail"};
-const int	MsgStyleList[]		= 	{STYLE_SUCCESS, STYLE_FAIL, STYLE_FAIL, STYLE_FAIL, STYLE_FAIL};
-const char* MsgList[]			= 	{"Success !",
-									"Error: Not allowed operation",
-									"Error: Invalid MAC address",
-									"Error: MAC address already exists",
-									"Error: Whitelist is full"};
+const char*	msgStyleStrList[]				=	{"hide", "success", "fail"};
+const int	MsgStyleList[MSG_MAX_NUM]		= 	{STYLE_SUCCESS, STYLE_FAIL, STYLE_FAIL, STYLE_FAIL, STYLE_FAIL, STYLE_SUCCESS};
+const char* MsgList[MSG_MAX_NUM]			= 	{"Success - Click Save to store permanently",
+												"Error: Not allowed operation",
+												"Error: Invalid MAC address",
+												"Error: MAC address already exists",
+												"Error: Whitelist is full",
+												"Configuration updated successfully"};
 
 int ICACHE_FLASH_ATTR isValidHex(char * str)
 {
@@ -67,6 +72,47 @@ int ICACHE_FLASH_ATTR isValidHex(char * str)
 }
 
 //Cgi to parse whitelist delete request
+int ICACHE_FLASH_ATTR cgiWhitelistUpdate(HttpdConnData *connData) {
+	int len, status;
+	int retStatus = MSG_NOT_ALLOWED;
+	char buff[1024];
+
+	if (connData->conn==NULL) {
+		//Connection aborted. Clean up.
+		return HTTPD_CGI_DONE;
+	}
+
+	len=httpdFindArg(connData->getArgs, "set", buff, sizeof(buff));
+	if (len > 0) {
+			status = strtol(buff, NULL, 10);
+			if(AUTH_ENABLED == status)
+				authGetConfig()->authStatus = AUTH_ENABLED;
+			else if(AUTH_DISABLED == status)
+				authGetConfig()->authStatus = AUTH_DISABLED;
+
+			retStatus = MSG_SUCCESS;
+	}
+
+	len=httpdFindArg(connData->getArgs, "update", buff, sizeof(buff));
+	if (len > 0) {
+			status = strtol(buff, NULL, 10);
+			if(status == 1)
+			{
+				//os_printf("[!] Saving Mode");
+				config_save();
+				retStatus = MSG_UPDATED;
+			}
+			else
+				retStatus = MSG_NOT_ALLOWED;
+	}
+
+	os_sprintf(buff, "/whitelist.tpl?msgid=%d", retStatus);
+	httpdRedirect(connData, buff);
+
+	return HTTPD_CGI_DONE;
+}
+
+//Cgi to parse whitelist delete request
 int ICACHE_FLASH_ATTR cgiWhitelistDel(HttpdConnData *connData) {
 	int len, Idx;
 	int retStatus = MSG_NOT_ALLOWED;
@@ -79,7 +125,7 @@ int ICACHE_FLASH_ATTR cgiWhitelistDel(HttpdConnData *connData) {
 
 	len=httpdFindArg(connData->postBuff, "id", buff, sizeof(buff));
 	if (len > 0) {
-			Idx = atoi(buff);
+			Idx = strtol(buff, NULL, 10);
 			if(authWhitelistCount() == 1)
 				retStatus = MSG_NOT_ALLOWED;
 			else if((Idx >= 0) && (Idx < WHITELIST_MAX))
@@ -171,7 +217,7 @@ void ICACHE_FLASH_ATTR tplWhitelist(HttpdConnData *connData, char *token, void *
 		os_sprintf(buff, "%d", WHITELIST_MAX);
 	}
 	else if (os_strcmp(token, "repeater")==0) {
-		eth_ret = authGetWhitelist();
+		eth_ret = authGetConfig()->macWhiteList;
 		count = 0;
 		for(Idx = 0; Idx < WHITELIST_MAX; Idx++)
 		{
@@ -197,12 +243,11 @@ void ICACHE_FLASH_ATTR tplWhitelist(HttpdConnData *connData, char *token, void *
 		len = httpdFindArg(connData->getArgs, "msgid", buff, sizeof(buff));
 		if(len > 0)
 		{
-				Idx = atoi(buff);
-				if( !((Idx >= 0) && (Idx < 5)) )
+				Idx = strtol(buff, NULL, 10);
+				if( !((Idx >= 0) && (Idx < MSG_MAX_NUM)) )
 					Idx = 1;
 
 				os_strcpy(buff, msgStyleStrList[MsgStyleList[Idx]]);
-				os_printf("%s", buff);
 		}
 		else
 			os_strcpy(buff, msgStyleStrList[STYLE_HIDDEN]);
@@ -211,18 +256,36 @@ void ICACHE_FLASH_ATTR tplWhitelist(HttpdConnData *connData, char *token, void *
 		len = httpdFindArg(connData->getArgs, "msgid", buff, sizeof(buff));
 		if(len > 0)
 		{
-			Idx = atoi(buff);
-			if( !((Idx >= 0) && (Idx < 5)) )
+			Idx = strtol(buff, NULL, 10);
+			if( !((Idx >= 0) && (Idx < MSG_MAX_NUM)) )
 				Idx = 1;
 
 			os_strcpy(buff, MsgList[Idx]);
-			os_printf("%s", buff);
 		}
 		else
 			buff[0] = NULL;
 	}
+	else if (os_strcmp(token, "STATUS_COLOR")==0) {
+		if(AUTH_ENABLED == authGetConfig()->authStatus)
+			os_strcpy(buff, "green");
+		else
+			os_strcpy(buff, "red");
+	}
+	else if (os_strcmp(token, "SECURITY_STATUS")==0) {
+			if(AUTH_ENABLED == authGetConfig()->authStatus)
+				os_strcpy(buff, "ENABLED");
+			else
+				os_strcpy(buff, "DISABLED");
+	}
+	else if (os_strcmp(token, "SECURITY_SET")==0) {
+				if(AUTH_ENABLED == authGetConfig()->authStatus)
+					os_sprintf(buff, "%d", AUTH_DISABLED);
+				else
+					os_sprintf(buff, "%d", AUTH_ENABLED);
+	}
 
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
 }
+
 
 

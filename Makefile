@@ -158,7 +158,7 @@ mkespfsimage/mkespfsimage: mkespfsimage/
 	make -C mkespfsimage
 
 html: webpages.espfs
-	$(Q) if [ $$(stat -c '%s' webpages.espfs) -gt $$(( 0x2E000 )) ]; then echo "webpages.espfs too big!"; false; fi
+	$(Q) if [ $$(stat -c '%s' webpages.espfs) -gt $$((0x2D000)) ]; then echo "webpages.espfs too big!"; false; fi
 
 clean:
 	$(Q) rm -f $(APP_AR)

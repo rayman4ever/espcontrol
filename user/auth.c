@@ -14,20 +14,15 @@
 #include "httpdespfs.h"
 #include "espfs.h"
 #include "auth.h"
+#include "config.h"
 
 // ARP Stuff
 #include <netif/etharp.h>
 
-typedef struct
-{
-	struct eth_addr macWhiteList[WHITELIST_MAX];
-	unsigned char authStatus;
-} AuthConfig;
+static AuthConfig* authConfig;
 
-static AuthConfig authConfig;
-
-struct eth_addr * ICACHE_FLASH_ATTR authGetWhitelist(){
-	return authConfig.macWhiteList;
+AuthConfig * ICACHE_FLASH_ATTR authGetConfig(){
+	return authConfig;
 }
 
 int ICACHE_FLASH_ATTR authWhitelistCount(){
@@ -36,7 +31,7 @@ int ICACHE_FLASH_ATTR authWhitelistCount(){
 
 	for(i = 0; i < WHITELIST_MAX; i++)
 	{
-		if(IS_VALID_MAC(authConfig.macWhiteList[i]))
+		if(IS_VALID_MAC(authConfig->macWhiteList[i]))
 			count++;
 	}
 
@@ -46,7 +41,7 @@ int ICACHE_FLASH_ATTR authWhitelistCount(){
 int ICACHE_FLASH_ATTR authWhitelistRemoveMac(int macIdx){
 	if( (macIdx >= 0) && (macIdx < WHITELIST_MAX) )
 	{
-		os_memset(&authConfig.macWhiteList[macIdx], 0, sizeof(struct eth_addr));
+		os_memset(&authConfig->macWhiteList[macIdx], 0, sizeof(struct eth_addr));
 		return 1;
 	}
 
@@ -63,9 +58,9 @@ int ICACHE_FLASH_ATTR authWhitelistAddMac(struct eth_addr * mac){
 	for(i = 0; i < WHITELIST_MAX; i++)
 	{
 		// Empty Space
-		if(!IS_VALID_MAC(authConfig.macWhiteList[i]))
+		if(!IS_VALID_MAC(authConfig->macWhiteList[i]))
 		{
-			os_memcpy(&authConfig.macWhiteList[i], mac, sizeof(struct eth_addr));
+			os_memcpy(&authConfig->macWhiteList[i], mac, sizeof(struct eth_addr));
 			return 1;
 		}
 	}
@@ -82,38 +77,18 @@ int ICACHE_FLASH_ATTR authIsMacAllowed(struct eth_addr * mac) {
 
 	for(i = 0; i < WHITELIST_MAX; i++)
 	{
-		if(!os_memcmp(&authConfig.macWhiteList[i], mac, sizeof(struct eth_addr)))
+		if(!os_memcmp(&authConfig->macWhiteList[i], mac, sizeof(struct eth_addr)))
 			return 1;
 	}
 
 	return 0;
 }
 
-int ICACHE_FLASH_ATTR authInit(){
-	struct eth_addr mac;
-
-	// Zero memory
-	os_memset(&authConfig, 0, sizeof(AuthConfig));
-
-	// Enable authentication
-	authConfig.authStatus = AUTH_ENABLED;
-
-	// Add Laptop Mac Address
-	mac.addr[0] = 0x61;		mac.addr[1] = 0x63;			mac.addr[2] = 0x64;
-	mac.addr[3] = 0x62;		mac.addr[4] = 0x63;			mac.addr[5] = 0x64;
-	authWhitelistAddMac(&mac);
-
-	// Remove the on in the middle
-	authWhitelistRemoveMac(1);
-
-	return 1;
-}
-
 int ICACHE_FLASH_ATTR authCgiHook(HttpdConnData *conn) {
 	struct eth_addr *eth_ret;
 	ip_addr_t *ip_ret;
 
-	if(AUTH_ENABLED == authConfig.authStatus)
+	if(AUTH_ENABLED == authConfig->authStatus)
 	{
 		// fetch source mac address
 		etharp_find_addr(ip_current_netif(), &current_iphdr_src, &eth_ret, &ip_ret);
@@ -129,4 +104,27 @@ int ICACHE_FLASH_ATTR authCgiHook(HttpdConnData *conn) {
 	return conn->cgi(conn);
 }
 
+int ICACHE_FLASH_ATTR authInit(){
+	//struct eth_addr mac;
 
+	// Read Config, Initialize if needed
+	config_t * system_config = config_init();
+
+	// Get Stored Configuration
+	authConfig = &system_config->authConfig;
+
+	/*
+	// Enable authentication
+	authConfig->authStatus = AUTH_ENABLED;
+
+	// Add Laptop Mac Address
+	mac.addr[0] = 0x60;		mac.addr[1] = 0x60;			mac.addr[2] = 0x60;
+	mac.addr[3] = 0x60;		mac.addr[4] = 0x60;			mac.addr[5] = 0x60;
+	if(authWhitelistAddMac(&mac))
+		os_printf("\nMAC - Added successfuly\n");
+	else
+		os_printf("\nMAC - Adding failed\n");
+	*/
+
+	return 1;
+}

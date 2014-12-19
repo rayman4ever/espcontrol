@@ -1,5 +1,4 @@
-<html>
-<head>
+<html><head>
 <title>ESPLight Server - White list</title>
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
@@ -9,9 +8,11 @@
 <br/>
 <div id="main">
 <h1>White list</h1>
+<h3>Current Status :</h3>
+<p>Security Mode <font color="%STATUS_COLOR%">%SECURITY_STATUS%</font> <a href="whitelist/update.cgi?set=%SECURITY_SET%">Change</a></p>
 <h3>Your Information :</h3>
-<p>IP : %IP%<br></p>
-<p>Mac Address : %MAC%<br></p>
+<p>IP: %IP%</p>
+<p>MAC Address : %MAC%</p>
 <h3>Current allowed devices :</h3>
 <form method="post" action="whitelist/del.cgi" >
 <div>
@@ -34,7 +35,7 @@ MAC Address :
 <input type="submit" value="Add"/>
 </div>
 </form>
+<div align="center"><a href="whitelist/update.cgi?update=1">Save</a></div>
 </div>
-</body>
-</html>
+</body></html>
 
