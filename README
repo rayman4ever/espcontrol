@@ -1,11 +1,12 @@
-esplight README
+espcontrol README
 
 A small webserver for home control based on esp-httpd featuring simple authorization system and time-based tasks.  
 
 Server Features:
- - Control room's light for now :D 
+ - Control GPIO for now :D 
  - MAC address whitelist control
  - Time based tasks (WIP)
+ - Multi-Server Communication (WIP)
 
 Building Instructions:
   1- Follow esp-httpd building instructions
@@ -23,5 +24,5 @@ Please notice the following:
  - html pages size shouldn't exceed 180KB
  - config is stored in flash at sector 0x3F (sector size = 4KB each)
 
-
 Special thanks to "Sprite_tm" for the great "esp-httpd"
+

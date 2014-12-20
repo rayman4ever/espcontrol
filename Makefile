@@ -32,7 +32,7 @@ ESPDELAY	?= 10
 ESPBAUD		?= 115200
 
 # name for the target project
-TARGET		= esplight
+TARGET		= espcontrol
 
 # which modules (subdirectories) of the project to include in compiling
 #MODULES		= driver user lwip/api lwip/app lwip/core lwip/core/ipv4 lwip/netif
