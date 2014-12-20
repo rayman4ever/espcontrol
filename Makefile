@@ -11,18 +11,20 @@
 BUILD_BASE	= build
 FW_BASE		= firmware
 
+ESP8266_ROOT_PATH ?= /home/rayman4eva/esp8266
+
 # Base directory for the compiler
-XTENSA_TOOLS_ROOT ?= /home/rayman4eva/esp8266/crosstool-NG/builds/xtensa-lx106-elf/bin
+XTENSA_TOOLS_ROOT ?= $(ESP8266_ROOT_PATH)/crosstool-NG/builds/xtensa-lx106-elf/bin
 
 #Extra Tensilica includes from the ESS VM
-SDK_EXTRA_INCLUDES ?= /home/rayman4eva/esp8266/ESP8266_SDK/include
-SDK_EXTRA_LIBS ?= /home/rayman4eva/esp8266/ESP8266_SDK/lib
+SDK_EXTRA_INCLUDES ?= $(ESP8266_ROOT_PATH)/ESP8266_SDK/include
+SDK_EXTRA_LIBS ?= $(ESP8266_ROOT_PATH)/ESP8266_SDK/lib
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= /home/rayman4eva/esp8266/ESP8266_SDK
+SDK_BASE	?= $(ESP8266_ROOT_PATH)/ESP8266_SDK
 
 #Esptool.py path and port
-ESPTOOL_PY		?= /home/rayman4eva/esp8266/esptool-py/esptool.py
+ESPTOOL_PY		?= $(ESP8266_ROOT_PATH)/esptool-py/esptool.py
 ESPTOOL			?= esptool
 ESPPORT			?= /dev/ttyUSB1
 #ESPDELAY indicates seconds to wait between flashing the two binary images
@@ -30,7 +32,7 @@ ESPDELAY	?= 10
 ESPBAUD		?= 115200
 
 # name for the target project
-TARGET		= httpd
+TARGET		= esplight
 
 # which modules (subdirectories) of the project to include in compiling
 #MODULES		= driver user lwip/api lwip/app lwip/core lwip/core/ipv4 lwip/netif
